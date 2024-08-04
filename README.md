@@ -7,6 +7,10 @@ I recently explored the tracability of monero and found this gem from Ciphertrac
 
 It's a really neat visualizer of the monero blockchain with a way to trace it. And I wanted ot make something similar. So I did! Please help me improve it.
 
+# How to try it
+
+Click here: https://supertestnet.github.io/examiner/
+
 # Video demo
 
 https://youtu.be/OwkiSeoaaF8
