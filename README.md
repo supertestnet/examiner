@@ -1,5 +1,7 @@
-# Examiner
+# eXaMineR
 Free and open source monero tracing tool
+
+Also known as Snooper Testnet
 
 I recently explored the tracability of monero and found this gem from Ciphertrace: https://news.bitcoin.com/ciphertrace-enhanced-monero-tracing-capabilities-governments/
 
