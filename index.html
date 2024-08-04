@@ -1,435 +1,407 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, user-scalable=no">
-        <style>
-            * {
-                box-sizing: border-box;
-                font-size: 1.15rem;
-                font-family: Arial, sans-serif;
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Examiner</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-size: 1rem;
+            font-family: Arial, sans-serif;
+        }
+        html {
+            max-width: 800px;
+            margin: auto;
+        }
+        body {
+            margin: 3rem 1rem;
+            line-height: 1.25;
+        }
+        h1 {
+            font-size: 2rem;
+        }
+        h2 {
+            font-size: 1.5rem;
+        }
+        input, button {
+            line-height: 1.5;
+            font-size: 1rem;
+        }
+        input {
+            width: calc(100% - 110px);
+            padding: 0.25rem;
+            border: 1px solid grey;
+        }
+        button {
+            width: 100px;
+            cursor: pointer;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .block_page, .tx_page {
+            word-break: break-word;
+        }
+        .popup {
+            border: 2px solid black;
+            padding: 1rem;
+            word-break: break-word;
+        }
+        .address_label {
+            cursor: pointer;
+        }
+        .decoy {
+            background-color: pink;
+        }
+        .link {
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+    </style>
+    <script defer>
+        document.addEventListener("DOMContentLoaded", () => {
+            const $ = document.querySelector.bind(document);
+            const $$ = document.querySelectorAll.bind(document);
+            const url_params = new URLSearchParams(window.location.search);
+            const $_GET = {};
+            for (const key of url_params.keys()) {
+                $_GET[key] = url_params.get(key);
             }
-            html {
-                max-width: 800px;
-                padding: 3rem 1rem;
-                margin: auto;
-                line-height: 1.25;
-                padding: 0;
-            }
-            body {
-                margin: 3rem 1rem;
-            }
-            h1 {
-                font-size: 2rem;
-            }
-            h2 {
-                font-size: 1.5rem;
-            }
-            input {
-                line-height: 1.25;
-                width: 100%;
-                height: 1.8rem;
-                font-size: 1.15rem;
-                border: 1px solid grey;
-            }
-            .hidden {
-                display: none !important;
-            }
-            .block_page, .tx_page {
-                word-wrap: break-word;
-            }
-            .popup {
-                border: 2px solid black;
-                padding: 1rem;
-                word-wrap: break-word;
-            }
-            .address_label {
-                cursor: pointer;
-            }
-            .address_labeler, .searchbox {
-                max-width: 50%;
-            }
-            .decoy {
-                background-color: pink;
-            }
-            .link {
-                color: blue;
-                text-decoration: underline;
-                cursor: pointer;
-            }
-            @media screen and (max-width: 600px) {
-            }
-        </style>
-        <script>
-            var $ = document.querySelector.bind( document );
-            var $$ = document.querySelectorAll.bind( document );
-            var url_params = new URLSearchParams( window.location.search );
-            var url_keys = url_params.keys();
-            var $_GET = {}
-            for ( var key of url_keys ) $_GET[ key ] = url_params.get( key );
-        </script>
-    </head>
-    <body>
-        <h1 style="font-size: 125%;">THE E<span style="font-size: 125%;">X</span>A<span style="font-size: 125%;">M</span>INE<span style="font-size: 125%;">R</span></h1>
-        <p>aka Snooper Testnet</p>
-        <div class="popup hidden"></div>
-        <h2>Search</h2>
-        <div class="searchbox_div"><p><input class="searchbox" placeholder="paste txid, block hash, or block number"> <button class="search">Submit</button></p></div>
-        <div class="block_page">
-        </div>
-        <div class="tx_page hidden">
-            <h2>This tx</h2>
-            <div class="this_tx"></div>
-            <h2>Sender info</h2>
-            <div class="sender_info"></div>
-            <h2>Recipient info</h2>
-            <div class="recipient_info"></div>
-            <h2>Amount info</h2>
-            <div class="amount_info"></div>
-            <h2>Timing info</h2>
-            <div class="timing_info"></div>
-            <p></p>
-            <p class="link" onclick="home()">Home</p>
-        </div>
-        <script>
-            var labels = {}
-            var decoys = {}
-            var addys = {}
-            var blockhash = null;
-            var block = null;
-            var txhash = null;
-            var tx = null;
-            var demo = false;
-            var recency_num_1 = 10_000;
-            var recency_num_2 = 10_000;
-            if ( $_GET[ "demo" ] === "true" ) {
-                demo = true;
-                recency_num_1 = 200_000;
-                recency_num_2 = 500;
-            }
-            var recency_bias = ( blocks, height ) => {
-                var possible_true_spends = [];
-                blocks.forEach( ( item, index ) => {
-                    if ( Math.abs( height - item ) >= recency_num_1 ) possible_true_spends.push( index );
-                });
-                if ( possible_true_spends.length === 1 ) return possible_true_spends[ 0 ];
-                return -1;
-            }
-            var merge_analysis = ( all_mixins, height ) => {
-                var all_blocknos = [];
-                all_mixins.forEach( mixins => {
-                    var blocknos = [];
-                    mixins.forEach( mixin => blocknos.push( mixin[ "block_no" ] ) );
-                    all_blocknos.push( blocknos );
-                });
-                var proximity_found = -1;
-                all_blocknos[ 0 ].every( ( blockno, idx ) => {
-                    all_blocknos.forEach( ( set, index ) => {
-                        if ( !index || proximity_found != -1 ) return;
-                        set.every( ( item, ix ) => {
-                            if ( Math.abs( item - blockno ) < 5 && Math.abs( item - height ) > recency_num_2 ) {
-                                proximity_found = [ idx, ix ];
-                                // the sender in input 0 is ${idx} and the sender in input ${index} is ${ix}
-                                return;
-                            }
-                            return true;
-                        });
+
+            const labels = {};
+            const decoys = {};
+            const addys = {};
+            let blockhash = null;
+            let block = null;
+            let txhash = null;
+            let tx = null;
+            let demo = $_GET["demo"] === "true";
+            let recency_num_1 = demo ? 200_000 : 10_000;
+            let recency_num_2 = demo ? 500 : 10_000;
+
+            const recency_bias = (blocks, height) => {
+                const possible_true_spends = blocks.filter((item, index) =>
+                    Math.abs(height - item) >= recency_num_1 ? index : -1
+                );
+                return possible_true_spends.length === 1 ? possible_true_spends[0] : -1;
+            };
+
+            const merge_analysis = (all_mixins, height) => {
+                let proximity_found = -1;
+                all_mixins[0].every((blockno, idx) => {
+                    all_mixins.every((mixins, index) => {
+                        if (index && proximity_found === -1) {
+                            mixins.every((item, ix) => {
+                                if (Math.abs(item.block_no - blockno) < 5 && Math.abs(item.block_no - height) > recency_num_2) {
+                                    proximity_found = [idx, ix];
+                                    return false;
+                                }
+                                return true;
+                            });
+                            return proximity_found === -1;
+                        }
+                        return true;
                     });
                     return true;
                 });
                 return proximity_found;
-            }
-            var address_label_fn = user => {
-                $( '.address_label' ).onclick = () => {return false;}
-                $( '.address_label' ).innerHTML = `
+            };
+
+            const address_label_fn = (user) => {
+                const addressLabel = $(".address_label");
+                addressLabel.onclick = () => false;
+                addressLabel.innerHTML = `
                     <input class="address_labeler"> <button class="address_label_button">Submit</button>
                 `;
-                $( '.address_label_button' ).onclick = () => {
-                    labels[ user[ "public_key" ] ] = $( '.address_labeler' ).value;
-                    $( '.address_label' ).innerHTML = "";
-                    $( '.address_label' ).innerText = labels[ user[ "public_key" ] ];
-                    setTimeout( () => {
-                        $( '.address_label' ).onclick = () => {address_label_fn( user );}
-                    }, 10 );
+                $(".address_label_button").onclick = () => {
+                    labels[user.public_key] = $(".address_labeler").value;
+                    addressLabel.innerHTML = labels[user.public_key];
+                    setTimeout(() => {
+                        addressLabel.onclick = () => address_label_fn(user);
+                    }, 10);
+                };
+            };
+
+            const eliminate_decoy_fn = (sender) => {
+                const btn = $(`.button_${sender.public_key}`);
+                if (btn) {
+                    btn.innerText += " (decoy)";
+                    btn.click();
                 }
-            }
-            var eliminate_decoy_fn = sender => {
-                var btn = $( `.button_${sender[ "public_key" ]}` );
-                if ( btn ) {
-                    var text = btn.innerText;
-                    text = text + " (decoy)";
-                    $( `.button_${sender[ "public_key" ]}` ).innerText = text;
-                }
-                if ( !( txhash in decoys ) ) decoys[ txhash ] = [];
-                if ( !decoys[ txhash ].includes( sender[ "public_key" ] ) ) decoys[ txhash ].push( sender[ "public_key" ] );
-                if ( btn ) $( `.button_${sender[ "public_key" ]}` ).click();
-            }
-            var uneliminate_decoy_fn = sender => {
-                var text = $( `.button_${sender[ "public_key" ]}` ).innerText;
-                text = text.substring( 0, text.length - 8 );
-                $( `.button_${sender[ "public_key" ]}` ).innerText = text;
-                decoys[ txhash ].splice( decoys[ txhash ].indexOf( sender[ "public_key" ] ), 1 );
-                $( `.button_${sender[ "public_key" ]}` ).click();
-            }
-            var search = async term => {
-                var is_block = false;
-                var url = `https://api.blockchair.com/monero/raw/transaction/${term}`;
-                if ( !isNaN( term ) ) {
+                if (!decoys[txhash]) decoys[txhash] = [];
+                if (!decoys[txhash].includes(sender.public_key)) decoys[txhash].push(sender.public_key);
+            };
+
+            const uneliminate_decoy_fn = (sender) => {
+                const btn = $(`.button_${sender.public_key}`);
+                const text = btn.innerText;
+                btn.innerText = text.substring(0, text.length - 8);
+                decoys[txhash] = decoys[txhash].filter(pk => pk !== sender.public_key);
+                btn.click();
+            };
+
+            const search = async (term) => {
+                let is_block = false;
+                let url = `https://api.blockchair.com/monero/raw/transaction/${term}`;
+                if (!isNaN(term)) {
                     url = `https://api.blockchair.com/monero/raw/block/${term}`;
                     is_block = true;
                 }
-                var query = await fetch( url );
-                var json = await query.json();
-                if ( !json || !( "data" in json ) || !json[ "data" ] ) {
-                    var query = await fetch( `https://api.blockchair.com/monero/raw/block/${term}` );
-                    var json = await query.json();
-                    if ( !json || !( "data" in json ) || !json[ "data" ] ) {
-                        blockhash = term;
+                let query = await fetch(url);
+                let json = await query.json();
+                if (!json || !json.data) {
+                    query = await fetch(`https://api.blockchair.com/monero/raw/block/${term}`);
+                    json = await query.json();
+                }
+                if (json.data) {
+                    if (is_block) {
                         block = json;
+                        blockhash = block.data[Object.keys(block.data)[0]].block.hash;
                         blockFiller();
-                    }
-                } else {
-                    if ( !is_block ) {
+                    } else {
                         txhash = term;
                         tx = json;
                         txFiller();
-                    } else {
-                        block = json;
-                        blockhash = block.data[ Object.keys( block.data )[ 0 ] ].block.hash;
-                        blockFiller();
                     }
+                } else {
+                    blockhash = term;
+                    block = json;
+                    blockFiller();
                 }
-            }
+            };
 
-            var blockFiller = () => {
-                $( '.block_page' ).classList.remove( "hidden" );
-                $( '.popup' ).classList.add( "hidden" );
-                $( '.tx_page' ).classList.add( "hidden" );
-                window.scrollTo( 0, 1 );
+            const blockFiller = () => {
+                $(".block_page").classList.remove("hidden");
+                $(".popup").classList.add("hidden");
+                $(".tx_page").classList.add("hidden");
+                window.scrollTo(0, 0);
 
-                var simpler_block = block.data[ Object.keys( block.data )[ 0 ] ].block;
+                const simpler_block = block.data[Object.keys(block.data)[0]].block;
 
-                var html = `
+                const html = `
                     <h2>Block height</h2>
-                    <div class="block_height">${simpler_block[ "block_height" ]}</div>
+                    <div class="block_height">${simpler_block.block_height}</div>
                     <h2>Mined at</h2>
-                    <div class="block_time">${simpler_block[ "timestamp_utc" ]}</div>
+                    <div class="block_time">${simpler_block.timestamp_utc}</div>
                     <h2>Transactions list</h2>
                     <div class="tx_list"><ol></ol></div>
-                    <p></p>
                     <p class="link" onclick="home()">Home</p>
                 `;
 
-                $( '.block_page' ).innerHTML = html;
+                $(".block_page").innerHTML = html;
 
-                simpler_block.txs.forEach( tx => {
-                    var li = document.createElement( "li" );
-                    li.innerHTML = `<span class="link" onclick="search( '${tx[ "tx_hash" ]}' )">${tx[ "tx_hash" ]}</span>`;
-                    $( '.tx_list ol' ).append( li );
+                simpler_block.txs.forEach(tx => {
+                    const li = document.createElement("li");
+                    li.innerHTML = `<span class="link" onclick="search('${tx.tx_hash}')">${tx.tx_hash}</span>`;
+                    $(".tx_list ol").append(li);
                 });
+            };
 
-            }
+            const txFiller = () => {
+                $(".block_page").classList.add("hidden");
+                $(".popup").classList.add("hidden");
+                $(".tx_page").classList.remove("hidden");
+                window.scrollTo(0, 0);
+                $(".this_tx").innerText = txhash;
 
-            var txFiller = () => {
-                $( '.block_page' ).classList.add( "hidden" );
-                $( '.popup' ).classList.add( "hidden" );
-                $( '.tx_page' ).classList.remove( "hidden" );
-                window.scrollTo( 0, 1 );
-                $( '.this_tx' ).innerText = txhash;
+                // SENDER INFO
+                const inputs = tx.data[txhash].transaction.inputs;
 
-                //SENDER INFO
+                if (inputs) {
+                    const div_1 = document.createElement("div");
+                    let true_spends = [];
 
-                var inputs = tx.data[ txhash ][ "transaction" ][ "inputs" ];
-                if ( inputs ) {
-                    var div_1 = document.createElement( "div" );
-                    var true_spends = [];
-                    if ( inputs.length > 1 ) {
-                        var mixins = [];
-                        inputs.forEach( input => mixins.push( input[ "mixins" ] ) );
-                        var true_spend_found_via_merge_analysis = merge_analysis( mixins, tx.data[ txhash ][ "transaction" ][ "block_height" ] );
-                        if ( true_spend_found_via_merge_analysis != -1 ) true_spends = true_spend_found_via_merge_analysis;
+                    if (inputs.length > 1) {
+                        const mixins = inputs.map(input => input.mixins);
+                        const true_spend_found_via_merge_analysis = merge_analysis(mixins, tx.data[txhash].transaction.block_height);
+                        if (true_spend_found_via_merge_analysis !== -1) true_spends = true_spend_found_via_merge_analysis;
                     }
-                    inputs.forEach( ( input, index ) => {
-                        var possible_senders = input[ "mixins" ];
-                        possible_senders.forEach( sender => {
-                            if ( !( sender[ "public_key" ] in addys ) ) addys[ sender[ "public_key" ] ] = [];
-                            if ( !addys[ sender[ "public_key" ] ].includes( txhash ) ) addys[ sender[ "public_key" ] ].push( txhash );
+
+                    inputs.forEach((input, index) => {
+                        const possible_senders = input.mixins;
+                        possible_senders.forEach(sender => {
+                            if (!addys[sender.public_key]) addys[sender.public_key] = [];
+                            if (!addys[sender.public_key].includes(txhash)) addys[sender.public_key].push(txhash);
                         });
-                        var html = `
-                            <div>
-                                <p style="font-weight: bold;">Input ${index + 1}</p>
-                        `;
-                        var sender_blocks = [];
-                        var possible_html = ``;
-                        if ( !true_spends.length ) {
-                            possible_senders.forEach( ( sender, idx ) => {
-                                sender_blocks.push( sender[ "block_no" ] );
-                                var is_decoy = ( txhash in decoys && decoys[ txhash ].includes( sender[ "public_key" ] ) );
-                                var msg = `Possible sender ${idx + 1}`;
-                                if ( is_decoy ) msg = msg + " (decoy)";
-                                possible_html += `<p style="float: left; margin: .5rem;"><button class="button_${sender[ "public_key" ]}">${msg}</button></p>`;
+
+                        let html = `<div><p style="font-weight: bold;">Input ${index + 1}</p>`;
+                        let sender_blocks = [];
+                        let possible_html = "";
+
+                        if (!true_spends.length) {
+                            possible_senders.forEach((sender, idx) => {
+                                sender_blocks.push(sender.block_no);
+                                const is_decoy = txhash in decoys && decoys[txhash].includes(sender.public_key);
+                                possible_html += `<p style="float: left; margin: .5rem;">
+                                    <button class="button_${sender.public_key}">${is_decoy ? `Possible sender ${idx + 1} (decoy)` : `Possible sender ${idx + 1}`}</button></p>`;
                             });
-                            var true_spend_found_via_recency_bias = recency_bias( sender_blocks, tx.data[ txhash ][ "transaction" ][ "block_height" ] );
-                            if ( true_spend_found_via_recency_bias != -1 ) {
-                                possible_html = ``;
-                                possible_senders.forEach( ( sender, idx ) => {
-                                    var is_decoy = !( idx === true_spend_found_via_recency_bias );
-                                    if ( is_decoy ) eliminate_decoy_fn( sender );
-                                    var msg = `Possible sender ${idx + 1}`;
-                                    if ( is_decoy ) msg = msg + " (decoy)";
-                                    possible_html += `<p style="float: left; margin: .5rem;"><button class="button_${sender[ "public_key" ]}">${msg}</button></p>`;
+                            const true_spend_found_via_recency_bias = recency_bias(sender_blocks, tx.data[txhash].transaction.block_height);
+                            if (true_spend_found_via_recency_bias !== -1) {
+                                possible_html = "";
+                                possible_senders.forEach((sender, idx) => {
+                                    const is_decoy = idx !== true_spend_found_via_recency_bias;
+                                    if (is_decoy) eliminate_decoy_fn(sender);
+                                    possible_html += `<p style="float: left; margin: .5rem;">
+                                        <button class="button_${sender.public_key}">${is_decoy ? `Possible sender ${idx + 1} (decoy)` : `Possible sender ${idx + 1}`}</button></p>`;
                                 });
                             }
                         } else {
-                            possible_senders.forEach( ( sender, idx ) => {
-                                if ( index === 0 ) {
-                                    var is_decoy = !( idx === true_spends[ 0 ] );
-                                    if ( is_decoy ) eliminate_decoy_fn( sender );
-                                }
-                                if ( index === 1 ) {
-                                    var is_decoy = !( idx === true_spends[ 1 ] );
-                                    if ( is_decoy ) eliminate_decoy_fn( sender );
-                                }
-                                var msg = `Possible sender ${idx + 1}`;
-                                if ( is_decoy ) msg = msg + " (decoy)";
-                                possible_html += `<p style="float: left; margin: .5rem;"><button class="button_${sender[ "public_key" ]}">${msg}</button></p>`;
+                            possible_senders.forEach((sender, idx) => {
+                                const is_decoy = index === 0 ? idx !== true_spends[0] : idx !== true_spends[1];
+                                if (is_decoy) eliminate_decoy_fn(sender);
+                                possible_html += `<p style="float: left; margin: .5rem;">
+                                    <button class="button_${sender.public_key}">${is_decoy ? `Possible sender ${idx + 1} (decoy)` : `Possible sender ${idx + 1}`}</button></p>`;
                             });
                         }
-                        html += possible_html;
-                        html += `
-                            <p style="clear: both;"></p>
-                            </div>
-                        `;
-                        var div_2 = document.createElement( "div" );
+
+                        html += `${possible_html}<p style="clear: both;"></p></div>`;
+                        const div_2 = document.createElement("div");
                         div_2.innerHTML = html;
-                        possible_senders.forEach( ( sender, idx ) => {
-                            div_2.getElementsByTagName( "button" )[ idx ].setAttribute( "data-sender_info", JSON.stringify( sender ) );
+                        possible_senders.forEach((sender, idx) => {
+                            div_2.getElementsByTagName("button")[idx].dataset.sender_info = JSON.stringify(sender);
                         });
-                        div_1.append( div_2.firstElementChild.cloneNode( true ) );
+                        div_1.append(div_2.firstElementChild.cloneNode(true));
                     });
-                    $( '.sender_info' ).innerHTML = "";
-                    div_1.childNodes.forEach( node => $( '.sender_info' ).append( node.cloneNode( true ) ) );
-                    var sender_buttons = document.getElementsByClassName( "sender_info" )[ 0 ].getElementsByTagName( "button" );
-                    var i; for ( i=0; i<sender_buttons.length; i++ ) {
-                        var btn = sender_buttons[ i ];
-                        var showPopup = e => {
-                            var sender = JSON.parse( e.target.getAttribute( "data-sender_info" ) );
-                            var is_decoy = ( txhash in decoys && decoys[ txhash ].includes( sender[ "public_key" ] ) );
-                            var popup = `
-                                <div class="pubkey_${sender[ "public_key" ]}">
-                                    <p>Pubkey: ${sender[ "public_key" ]}</p>
+
+                    $(".sender_info").innerHTML = "";
+                    div_1.childNodes.forEach(node => $(".sender_info").append(node.cloneNode(true)));
+                    $(".sender_info button").forEach(btn => {
+                        btn.onclick = (e) => {
+                            const sender = JSON.parse(e.target.dataset.sender_info);
+                            const is_decoy = txhash in decoys && decoys[txhash].includes(sender.public_key);
+                            const popup = `
+                                <div class="pubkey_${sender.public_key}">
+                                    <p>Pubkey: ${sender.public_key}</p>
                                     <p>Label: <span class="address_label">None (click to change)</span></p>
-                                    <p>Received money: <span class="link" onclick="search( '${sender[ "tx_hash" ]}' )">block ${sender[ "block_no" ]}</span></p>
-                                    <p><button class="eliminate_decoy">Eliminate decoy</button></p>
-                                </div>
-                            `;
-                            $( '.popup' ).innerHTML = popup;
-                            window.scrollTo( 0, 1 );
-                            $( '.address_label' ).onclick = () => {address_label_fn( sender );}
-                            $( '.eliminate_decoy' ).onclick = () => {eliminate_decoy_fn( sender );}
-                            if ( $( `.pubkey_${sender[ "public_key" ]}` ) ) if ( sender[ "public_key" ] in labels ) $( '.address_label' ).innerText = labels[ sender[ "public_key" ] ];
-                            $( '.popup' ).classList.remove( "hidden" );
-                            if ( is_decoy ) {
-                                $( `.popup` ).classList.add( "decoy" );
-                                $( '.eliminate_decoy' ).onclick = () => {uneliminate_decoy_fn( sender );}
-                                $( '.eliminate_decoy' ).innerText = "Uneliminate";
+                                    <p>Received money: <span class="link" onclick="search('${sender.tx_hash}')">block ${sender.block_no}</span></p>
+                                    <p><button class="eliminate_decoy">${is_decoy ? "Uneliminate" : "Eliminate decoy"}</button></p>
+                                </div>`;
+                            $(".popup").innerHTML = popup;
+                            window.scrollTo(0, 0);
+                            $(".address_label").onclick = () => address_label_fn(sender);
+                            $(".eliminate_decoy").onclick = () => {
+                                if (is_decoy) {
+                                    uneliminate_decoy_fn(sender);
+                                } else {
+                                    eliminate_decoy_fn(sender);
+                                }
+                            };
+                            if (labels[sender.public_key]) $(".address_label").innerText = labels[sender.public_key];
+                            $(".popup").classList.remove("hidden");
+                            if (is_decoy) {
+                                $(".popup").classList.add("decoy");
                             } else {
-                                $( `.popup` ).classList.remove( "decoy" );
+                                $(".popup").classList.remove("decoy");
                             }
-                        }
-                        btn.onclick = e => {showPopup( e );}
-                    }
+                        };
+                    });
                 } else {
-                    $( '.sender_info' ).innerHTML = `This is a coinbase transaction and those do not have senders`;
+                    $(".sender_info").innerHTML = `This is a coinbase transaction and those do not have senders`;
                 }
 
-                //RECIPIENT INFO
-
-                var outputs = tx.data[ txhash ][ "transaction" ][ "outputs" ];
-                var html = `
-                    <div>
-                `;
-                outputs.forEach( ( recipient, index ) => {
-                    if ( !( recipient[ "public_key" ] in addys ) ) addys[ recipient[ "public_key" ] ] = [];
-                    if ( !addys[ recipient[ "public_key" ] ].includes( txhash ) ) addys[ recipient[ "public_key" ] ].push( txhash );
-                    html += `<p style="float: left; margin: .5rem;"><button class="button_${recipient[ "public_key" ]}">Recipient ${index + 1}</button></p>`;
+                // RECIPIENT INFO
+                const outputs = tx.data[txhash].transaction.outputs;
+                let html = "<div>";
+                outputs.forEach((recipient, index) => {
+                    if (!addys[recipient.public_key]) addys[recipient.public_key] = [];
+                    if (!addys[recipient.public_key].includes(txhash)) addys[recipient.public_key].push(txhash);
+                    html += `<p style="float: left; margin: .5rem;">
+                        <button class="button_${recipient.public_key}">Recipient ${index + 1}</button></p>`;
                 });
-                html += `
-                    <p style="clear: both;"></p>
-                    </div>
-                `;
-                var div = document.createElement( "div" );
+                html += `<p style="clear: both;"></p></div>`;
+                const div = document.createElement("div");
                 div.innerHTML = html;
-                outputs.forEach( ( recipient, index ) => {
-                    var showPopup = () => {
-                        var popup = `
-                            <div class="pubkey_${recipient[ "public_key" ]}">
-                                <p>Pubkey: ${recipient[ "public_key" ]}</p>
+
+                outputs.forEach((recipient, index) => {
+                    div.getElementsByTagName("button")[index].onclick = () => {
+                        const popup = `
+                            <div class="pubkey_${recipient.public_key}">
+                                <p>Pubkey: ${recipient.public_key}</p>
                                 <p>Label: <span class="address_label">None (click to change)</span></p>
-                                <p>Appears in these transactions: <span class="addy_tx_list">unknown</span></p>
-                            </div>
-                        `;
-                        $( '.popup' ).innerHTML = popup;
-                        window.scrollTo( 0, 1 );
-                        $( '.address_label' ).onclick = () => {address_label_fn( recipient );}
-                        if ( $( `.pubkey_${recipient[ "public_key" ]}` ) ) if ( recipient[ "public_key" ] in labels ) $( '.address_label' ).innerText = labels[ recipient[ "public_key" ] ];
-                        $( '.addy_tx_list' ).innerHTML = JSON.stringify( addys[ recipient[ "public_key" ] ] );
-                        $( '.popup' ).classList.remove( "hidden" );
-                    }
-                    div.getElementsByTagName( "button" )[ index ].onclick = showPopup;
+                                <p>Appears in these transactions: <span class="addy_tx_list">${JSON.stringify(addys[recipient.public_key])}</span></p>
+                            </div>`;
+                        $(".popup").innerHTML = popup;
+                        window.scrollTo(0, 0);
+                        $(".address_label").onclick = () => address_label_fn(recipient);
+                        if (labels[recipient.public_key]) $(".address_label").innerText = labels[recipient.public_key];
+                        $(".popup").classList.remove("hidden");
+                    };
                 });
-                $( '.recipient_info' ).innerHTML = "";
-                $( '.recipient_info' ).append( div.firstElementChild );
 
-                //AMOUNT INFO
-                
-                if ( inputs ) {
-                    var fee = tx.data[ txhash ][ "transaction" ][ "tx_fee" ];
-                    var fee_in_decimal = ( fee / 1_000_000_000_000 ).toFixed( 12 );
-                    var output_estimate = ( ( fee * 10 ) / 1_000_000_000_000 ).toFixed( 12 );
-                    var input_estimate = ( ( ( fee * 10 ) + fee ) / 1_000_000_000_000 ).toFixed( 12 );
-                    $( '.amount_info' ).innerHTML = `
-                        <p>Fee: ${fee_in_decimal}&nbsp;xmr</p>
-                        <p>Rough amount in outputs (lower bound): ${output_estimate}&nbsp;xmr</p>
-                        <p>Rough amount in inputs (lower bound): ${input_estimate}&nbsp;xmr</p>
-                    `;
+                $(".recipient_info").innerHTML = "";
+                $(".recipient_info").append(div.firstElementChild);
+
+                // AMOUNT INFO
+                let amount_info_html = "";
+                if (inputs) {
+                    const fee = tx.data[txhash].transaction.tx_fee;
+                    const fee_in_decimal = (fee / 1_000_000_000_000).toFixed(12);
+                    const output_estimate = ((fee * 10) / 1_000_000_000_000).toFixed(12);
+                    const input_estimate = (((fee * 10) + fee) / 1_000_000_000_000).toFixed(12);
+                    amount_info_html = `
+                        <p>Fee: ${fee_in_decimal} xmr</p>
+                        <p>Rough amount in outputs (lower bound): ${output_estimate} xmr</p>
+                        <p>Rough amount in inputs (lower bound): ${input_estimate} xmr</p>`;
                 } else {
-                    $( '.amount_info' ).innerHTML = `This investigator does not currently support showing the amount created in a coinbase transaction`;
+                    amount_info_html = `This investigator does not currently support showing the amount created in a coinbase transaction`;
                 }
-                //TIMING INFO
+                $(".amount_info").innerHTML = amount_info_html;
 
-                $( '.timing_info' ).innerHTML = `
-                    <p>Block mined: ${tx.data[ txhash ][ "transaction" ][ "block_height" ]}</p>
-                    <p>Date/time: ${tx.data[ txhash ][ "transaction" ][ "timestamp_utc" ]}</p>
-                `;
-            }
-            var home = async () => {
-                var url = `https://api.blockchair.com/monero/stats`;
-                var init_data = await fetch( url );
-                init_json = await init_data.json();
-                var height = init_json[ "data" ][ "best_block_height" ];
-                var blocks = [];
-                var i; for ( i=height - 10; i<height; i++ ) {
-                    blocks.push( i );
-                }
-                blocks.sort().reverse();
-                html = `
-                    <h2>Or pick a recent block</h2>
-                    <ul>
-                `;
-                blocks.forEach( item => html += `<li><span class="link" onclick="search( '${item}' )">${item}</span></li>` );
-                html += `
-                    <ul>
-                `;
-                $( '.block_page' ).innerHTML = html;
+                // TIMING INFO
+                $(".timing_info").innerHTML = `
+                    <p>Block mined: ${tx.data[txhash].transaction.block_height}</p>
+                    <p>Date/time: ${tx.data[txhash].transaction.timestamp_utc}</p>`;
+            };
 
-                $( '.block_page' ).classList.remove( "hidden" );
-                $( '.popup' ).classList.add( "hidden" );
-                $( '.tx_page' ).classList.add( "hidden" );
-                window.scrollTo( 0, 1 );
-            }
+            const home = async () => {
+                const url = `https://api.blockchair.com/monero/stats`;
+                const init_data = await fetch(url);
+                const init_json = await init_data.json();
+                const height = init_json.data.best_block_height;
+                const blocks = Array.from({ length: 10 }, (_, i) => height - i).sort().reverse();
+
+                let html = "<h2>Or pick a recent block</h2><ul>";
+                blocks.forEach(item => {
+                    html += `<li><span class="link" onclick="search('${item}')">${item}</span></li>`;
+                });
+                html += "</ul>";
+
+                $(".block_page").innerHTML = html;
+                $(".block_page").classList.remove("hidden");
+                $(".popup").classList.add("hidden");
+                $(".tx_page").classList.add("hidden");
+                window.scrollTo(0, 0);
+            };
+
             home();
-            $( '.search' ).onclick = async t => {search( t.target.previousElementSibling.value );}
-        </script>
-    </body>
+            $(".search").onclick = () => search($(".searchbox").value);
+        });
+    </script>
+</head>
+<body>
+    <h1>THE E<span style="font-size: 125%;">X</span>A<span style="font-size: 125%;">M</span>INE<span style="font-size: 125%;">R</span></h1>
+    <p>aka Snooper Testnet</p>
+    <div class="popup hidden"></div>
+    <h2>Search</h2>
+    <div class="searchbox_div">
+        <input class="searchbox" placeholder="paste txid, block hash, or block number">
+        <button class="search">Submit</button>
+    </div>
+    <div class="block_page"></div>
+    <div class="tx_page hidden">
+        <h2>This tx</h2>
+        <div class="this_tx"></div>
+        <h2>Sender info</h2>
+        <div class="sender_info"></div>
+        <h2>Recipient info</h2>
+        <div class="recipient_info"></div>
+        <h2>Amount info</h2>
+        <div class="amount_info"></div>
+        <h2>Timing info</h2>
+        <div class="timing_info"></div>
+        <p class="link" onclick="home()">Home</p>
+    </div>
+</body>
 </html>
