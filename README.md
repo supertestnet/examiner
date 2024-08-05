@@ -3,7 +3,7 @@ Free and open source monero tracing tool
 
 Also known as Snooper Testnet
 
-![tracing an example transaction](https://supertestnet.github.io/examiner/examiner-example.gif)
+![tracing an example transaction, this one: c97d96fe61b2aee18a04fdb0975594c7e6d3334036e0e57e70666b9e5fe309b3](https://supertestnet.github.io/examiner/examiner-example.gif)
 
 I recently explored the tracability of monero and found this gem from Ciphertrace: https://news.bitcoin.com/ciphertrace-enhanced-monero-tracing-capabilities-governments/
 
@@ -12,6 +12,8 @@ It's a really neat visualizer of the monero blockchain with a way to trace it. A
 # How to try it
 
 Click here: https://supertestnet.github.io/examiner/
+
+Here is an example of a transaction where it identifies the sender by eliminating decoys through recency bias detection: c97d96fe61b2aee18a04fdb0975594c7e6d3334036e0e57e70666b9e5fe309b3
 
 # Video demo
 
