@@ -21,7 +21,7 @@ https://youtu.be/OwkiSeoaaF8
 
 # How it works
 
-Mostly it gives you the basic info about a transaction and buttons for eliminating "decoy senders" whom you are mostly expected to identify using off chain data. I have a way to manually identify ringsig members as decoys but I haven't automated it yet. What I want to do is use known "view keys" to identify decoys, because if you have the view key you know the "true" tx in which you spent your own coin, so if you've been used as a decoy you can automatically filter that out.
+Mostly it gives you the basic info about a transaction and buttons for eliminating "decoy senders" whom you are mostly expected to identify using off chain data. I have a way to manually identify ringsig members as decoys but I haven't automated it yet. What I want to do is let you import a monero address, its view key, and its private key. Then I could write software to automatically identify your own keys as a decoy, because if you have the view key and private key, you know whether you signed any transaction, so if you've been used as a decoy you can automatically filter that out.
 
 ## Merge analysis and recency bias
 
