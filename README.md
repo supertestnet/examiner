@@ -13,7 +13,7 @@ It's a really neat visualizer of the monero blockchain with a way to trace it. A
 
 Click here: https://supertestnet.github.io/examiner/
 
-Here is an example of a transaction where it identifies the sender by eliminating decoys through recency bias detection: c97d96fe61b2aee18a04fdb0975594c7e6d3334036e0e57e70666b9e5fe309b3
+Here is an example of a transaction where it identifies the sender by eliminating decoys through recency bias detection: e32ab58394a86b1de3bbc89febd45472044951cecb0d156fb975d994d19151b0
 
 # Video demo
 
